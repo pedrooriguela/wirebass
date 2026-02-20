@@ -1,11 +1,16 @@
 #include <stdio.h>
+#include <sys/types.h>
 #include <stdlib.h>
 #include <pcap.h> 
 #include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
 #include <netinet/if_ether.h>
+#include <net/ethernet.h>
+#include "wirebass.h"
+
 
 int main () {
 
@@ -41,7 +46,45 @@ int main () {
     printf("%s\n", mask);
 
 
-    
+    pcap_t *open_live;
+
+    open_live = pcap_open_live(alldevices->name, BUFSIZ, 0, 1000, errbuf);
+
+    if( open_live == NULL )
+    {
+        printf("Não foi possivel abrir dispositivo: %s", errbuf);
+        exit(1);
+    }
+
+    const unsigned char *packet;
+    struct pcap_pkthdr hdr;
+
+  
+
+    packet = pcap_next(open_live, &hdr);
+
+    printf( "=== Pacote Captruado ===\n" );
+    printf( "Capturado em: %s", ctime(( const time_t * )&hdr.ts.tv_sec ) );
+    printf( "Tamanho do pacote: %d\n", hdr.len );
+    printf( "Tamanho header Ethernet: 14\n");
+
+
+    struct sniff_ethernet * etr_ptr = (struct sniff_ethernet *) packet;
+
+    printf("ethertype: %04X\n", ntohs(etr_ptr->ether_type));
+
+    printf("destination: %02x:%02x:%02x:%02x:%02x:%02x\n",
+        etr_ptr->ether_dhost[0], etr_ptr->ether_dhost[1],
+        etr_ptr->ether_dhost[2], etr_ptr->ether_dhost[3],
+        etr_ptr->ether_dhost[4], etr_ptr->ether_dhost[5]);
+
+    printf("source: %02x:%02x:%02x:%02x:%02x:%02x\n",
+        etr_ptr->ether_host[0], etr_ptr->ether_host[1],
+        etr_ptr->ether_host[2], etr_ptr->ether_host[3],
+        etr_ptr->ether_host[4], etr_ptr->ether_host[5]);
+
+
+
 
     return 0;
 
