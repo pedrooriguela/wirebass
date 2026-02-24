@@ -11,6 +11,27 @@
 #include <net/ethernet.h>
 #include "wirebass.h"
 
+void callback( unsigned char *user, const struct pcap_pkthdr *hdr, const unsigned char *packet ){
+    printf( "=== Pacote Captruado ===\n" );
+    printf( "Capturado em: %s", ctime(( const time_t * )&hdr->ts.tv_sec ) );
+    printf( "Tamanho do pacote: %d\n", hdr->len );
+    printf( "Tamanho header Ethernet: 14\n");
+
+
+    struct sniff_ethernet * etr_ptr = (struct sniff_ethernet *) packet;
+
+    printf("ethertype: %04X\n", ntohs(etr_ptr->ether_type));
+
+    printf("destination: %02x:%02x:%02x:%02x:%02x:%02x\n",
+        etr_ptr->ether_dhost[0], etr_ptr->ether_dhost[1],
+        etr_ptr->ether_dhost[2], etr_ptr->ether_dhost[3],
+        etr_ptr->ether_dhost[4], etr_ptr->ether_dhost[5]);
+
+    printf("source: %02x:%02x:%02x:%02x:%02x:%02x\n",
+        etr_ptr->ether_host[0], etr_ptr->ether_host[1],
+        etr_ptr->ether_host[2], etr_ptr->ether_host[3],
+        etr_ptr->ether_host[4], etr_ptr->ether_host[5]);
+}
 
 int main () {
 
@@ -84,6 +105,15 @@ int main () {
         etr_ptr->ether_host[4], etr_ptr->ether_host[5]);
 
 
+
+    
+    struct bpf_program compiled_program;
+    
+    if( pcap_compile(open_live, &compiled_program, "ether proto 0x0800", 0, netp) == -1){
+        exit(1);
+    }
+
+    pcap_loop(open_live, -1, callback, NULL);
 
 
     return 0;
